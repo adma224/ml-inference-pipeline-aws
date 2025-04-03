@@ -15,24 +15,6 @@ This project demonstrates a scalable, production-style A/B inference pipeline us
 
 ---
 
-## Live Project Phases
-
-This is a multi-phase portfolio project. Each phase adds production-level capabilities:
-
-| Phase | Description |
-|-------|-------------|
-| Phase 1 | Deploy GPT-2 to SageMaker manually |
-| Phase 2 | Add GitHub Actions pipeline for CI/CD |
-| Phase 3 | Deploy Lambda function to invoke SageMaker |
-| Phase 4 | Expose public API via API Gateway + Route 53 |
-| Phase 5 | Add second model + inference routing (A/B) |
-| Phase 6 | Collect feedback with DynamoDB |
-| Phase 7 | Add visualization and metric reporting |
-| Phase 8 | Add SageMaker training job pipeline |
-| Phase 9 | Register models and deploy versioned models |
-
----
-
 ## Tech Stack
 
 **Cloud Infrastructure**
