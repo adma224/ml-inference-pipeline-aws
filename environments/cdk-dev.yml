@@ -1,0 +1,17 @@
+name: cdk-dev
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - nodejs
+  - awscli
+  - boto3
+  - black
+  - ruff
+  - pre-commit
+  - pip:
+      - aws-cdk-lib
+      - constructs
+      - pytest

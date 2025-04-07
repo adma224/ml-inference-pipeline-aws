@@ -1,0 +1,103 @@
+name: CI/CD for AWS CDK Inference Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cdk/**'
+      - '.github/workflows/ci-cd.yml'
+  pull_request:
+    branches: [main]
+
+env:
+  AWS_REGION: us-west-2
+
+jobs:
+  validate:
+    name: 🧪 Validate CDK Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🐍 Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: 📚 Install dependencies
+        run: |
+          pip install -r cdk/requirements.txt
+          pip install flake8 pytest aws-cdk-lib constructs
+
+      - name: 🔍 Lint code
+        run: |
+          flake8 cdk/stacks/ || true
+
+      - name: ✅ Run unit tests
+        run: |
+          export PYTHONPATH=$PYTHONPATH:./cdk
+          pytest cdk/tests/
+
+      - name: 🔐 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🛠 CDK synth
+        run: |
+          cd cdk/
+          npx cdk synth
+
+      - name: 📊 CDK diff
+        run: |
+          cd cdk/
+          npx cdk diff
+
+  deploy:
+    name: 🚀 Deploy CDK Stack
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://yourapp.com  # Optional — update with your app's real URL
+
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🐍 Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: 📚 Install dependencies
+        run: |
+          pip install -r cdk/requirements.txt
+          pip install aws-cdk-lib constructs
+
+      - name: 🧰 Install AWS CDK CLI
+        run: npm install -g aws-cdk
+
+      - name: 🔐 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 📦 CDK bootstrap
+        run: |
+          cd cdk/
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          cdk bootstrap aws://$ACCOUNT_ID/$AWS_REGION
+
+      - name: 🚀 CDK deploy
+        run: |
+          cd cdk/
+          cdk deploy --require-approval never --verbose --all
+
+

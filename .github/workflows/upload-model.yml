@@ -1,0 +1,53 @@
+# .github/workflows/upload-model.yml
+name: 🚀 Upload Model Artifacts and Deploy
+
+on:
+  push:
+    paths:
+      - "models/**"
+    branches:
+      - main
+
+env:
+  AWS_REGION: us-west-2
+
+jobs:
+  upload-and-deploy:
+    name: 📦 Upload + 🔄 Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧾 Checkout
+        uses: actions/checkout@v3
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: 📦 Install Python dependencies
+        run: |
+          pip install boto3
+
+      - name: 🔼 Upload model to S3
+        run: python scripts/upload_model.py
+
+      - name: 🧰 Install CDK
+        run: npm install -g aws-cdk
+
+      - name: 📚 Install CDK dependencies
+        run: |
+          pip install -r cdk/requirements.txt
+          pip install aws-cdk-lib constructs
+
+      - name: 🔐 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🚀 Deploy CDK with new model path
+        run: |
+          cd cdk/
+          cdk deploy --require-approval never --all
