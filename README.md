@@ -42,40 +42,195 @@ This project demonstrates a scalable, production-style inference pipeline using 
 
 ---
 
-## ✅ Phase 0: CI/CD & Environment Setup
+## Project Roadmap
 
-- Set up GitHub Actions for continuous deployment.
-- Defined Conda environment for local reproducibility.
-- Deployed CDK infrastructure with a multi-stack architecture.
-- Bootstrapped the AWS environment for asset publishing.
+### **Phase 0: CI/CD + Local Environment Setup**
 
----
+**Goal**: Set up development and deployment workflows.
 
-## ✅ Phase 1: Model Training & Packaging
+- [x]  Create Conda environments yaml files (`cdk-dev`, `ml-dev`)
+- [x]  Scaffold GitHub Actions CI/CD pipeline for CDK
+- [x]  Set up CDK project in Python deploy S3 bucket and IAM permissions
+- [x]  Store AWS credentials in GitHub Secrets
 
-- Fine-tuned a DistilGPT-2 model using Hugging Face + PyTorch.
-- Exported model artifacts and tokenizer to `model.tar.gz` and `tokenizer.tar.gz`.
-- Stored artifacts in a versioned S3 bucket for reproducible inference.
-- Prepared assets for deployment in SageMaker Serverless.
+**Deliverables**:
 
----
+- [x]  `.github/workflows/deploy.yml`
+- [x]  `cdk/` directory with base infra
+- [x]  GitHub Actions deploying infra stack automatically
 
-## ✅ Phase 2: Serverless Model Inference Deployment
+**Tech stack**:
 
-- Deployed the trained model to a SageMaker Serverless Inference endpoint.
-- Used a prebuilt Hugging Face inference container.
-- Stored the endpoint name in AWS SSM for decoupled access.
-- Verified functionality with an invoke script and test prompt.
+`AWS CDK (Python)`, `GitHub Actions`, `Conda`, `IAM`, `S3`
 
 ---
 
-## ✅ Phase 3: Lambda Gateway Integration
+### **Phase 1: Local Model Training + Testing**
 
-- Built a Lambda function that acts as a secure proxy to the inference endpoint.
-- Added warm-up logic to minimize latency for first-time requests.
-- Performed basic error handling and input validation.
-- Connected Lambda to API Gateway for scalable HTTPS access.
+**Goal**: Fine-tune GPT-2 model locally and validate outputs.
+
+**Steps**:
+
+- [x]  Train DistilGPT-2 on headlines dataset in Jupyter Notebook
+- [x]  Test model and tune hyperparameters
+- [x]  Run local predictions to validate quality
+- [x]  Save model and tokenizer to disk (`.save_pretrained`)
+
+**Deliverables**:
+
+- [x]  Jupyter notebook with training + testing code
+- [x]  `upload_model.py` script to upload artifacts to S3
+- [x]  Exported artifacts in `models/`
+
+**Tech stack**:
+
+`Hugging Face Transformers`, `Jupyter`, `PyTorch`, `S3`, `Boto3`
 
 ---
 
-📌 *Next Phases will include model registry, canary deployments, user feedback tracking, and real-time A/B testing.*
+### **Phase 2: Inference Deployment in AWS**
+
+**Goal**: Deploy the trained model as a **SageMaker Serverless Inference Endpoint**.
+
+**Steps**:
+
+- [x]  Use CDK to create:
+    - `S3 bucket` for artifacts
+    - `IAM role` for SageMaker
+    - `CfnModel`, `CfnEndpointConfig`, and `CfnEndpoint`
+- [x]  Upload model.tar.gz to S3
+- [x]  Deploy endpoint via CDK
+- [x]  Invoke endpoint using `invoke_endpoints.py`
+
+**Deliverables**:
+
+- [x]  `inference_stack.py` with SageMaker setup
+- [x]  Endpoint name stored in SSM
+- [x]  Successfully invoked endpoint with real output
+
+**Tech stack**:
+
+`SageMaker Serverless`, `CDK`, `SSM`, `Boto3`, `IAM`, `S3`
+
+---
+
+### **Phase 3: API Gateway + Lambda + Network Security + Unit Testing**
+
+**Goal**: Expose inference endpoint via HTTP API and add pre-processing logic.
+
+**Steps**:
+
+- [ ]  Add `Lambda function` that:
+    - Validates input
+    - Sends request to SageMaker
+    - Handles errors / warm-up logic
+- [ ]  Add `API Gateway` endpoint (public or secured)
+- [ ]  Start creating unit + integration tests for Lambda
+- [ ]  Add rate limiting / throttling to prevent abuse
+
+**Deliverables**:
+
+- [ ]  `lambda_handler.py`
+- [ ]  CDK deployment of API Gateway + Lambda
+- [ ]  `tests/` directory with test cases
+
+**Tech stack**:
+
+`API Gateway`, `Lambda`, `Pytest`, `SSM`, `IAM`, `CloudWatch Logs`
+
+---
+
+### **Phase 4: Frontend UI + Route 53 + Hosting**
+
+**Goal**: Build a basic user-facing UI connected to the API.
+
+**Steps**:
+
+- [ ]  Build static HTML + JS frontend (prompt input, response output)
+- [ ]  Add upvote/downvote buttons (disabled initially)
+- [ ]  Host frontend via S3 static website hosting
+- [ ]  Connect domain using Route 53 and SSL via ACM
+
+**Deliverables**:
+
+- [ ]  `frontend/index.html`, `style.css`, `script.js`
+- [ ]  Route 53 configuration
+- [ ]  CDN (optional: CloudFront for HTTPS)
+
+**Tech stack**:
+
+`S3 static hosting`, `Route 53`, `HTML/JS`, `CloudFront (optional)`
+
+---
+
+### **Phase 5: Feedback System with Aurora**
+
+**Goal**: Store responses + feedback using Aurora Serverless.
+
+**Steps**:
+
+- [ ]  Provision Aurora Serverless v2 with CDK
+- [ ]  Add upvote/downvote recording in Lambda
+- [ ]  Store: prompt, response, model, feedback, timestamp
+
+**Deliverables**:
+
+- [ ]  Aurora SQL schema + CDK definition
+- [ ]  Updated Lambda logic to write to DB
+- [ ]  UI integration: thumbs up/down + Ajax POST to API
+
+**Tech stack**:
+
+`Aurora Serverless`, `CDK`, `PostgreSQL or MySQL`, `Lambda`, `S3`
+
+---
+
+### **Phase 6: A/B Testing + CloudWatch Metrics + Model Labels**
+
+**Goal**: Route requests between two models and visualize metrics.
+
+**Steps**:
+
+- [ ]  Deploy GPT-Lite variant alongside GPT-2
+- [ ]  Use SageMaker Production Variants for A/B testing
+- [ ]  Log model name in responses
+- [ ]  Create dashboard for:
+    - Feedback per model
+    - Latency, error rate, traffic split
+
+**Deliverables**:
+
+- [ ]  CDK A/B config
+- [ ]  CloudWatch metrics setup
+- [ ]  Dashboard in CloudWatch or QuickSight
+
+**Tech stack**:
+
+`SageMaker production variants`, `CloudWatch`, `Aurora`, `QuickSight (optional)`
+
+---
+
+### **Phase 7: Classifier Integration (BERT or Similar)**
+
+**Goal**: Auto-classify model output (e.g., category: sports, politics...).
+
+**Steps**:
+
+- [ ]  Train lightweight BERT classifier
+- [ ]  Deploy it as second SageMaker endpoint
+- [ ]  Extend Lambda to:
+    - Route output to classifier
+    - Store prediction in Aurora
+    - Return category to frontend
+
+**Deliverables**:
+
+- [ ]  `bert_classifier/`
+- [ ]  Updated Lambda + Aurora schema
+- [ ]  Category displayed in UI
+
+**Tech stack**:
+
+`SageMaker`, `Transformers`, `Lambda`, `Aurora`, `JS UI update`
+
+---
