@@ -1,0 +1,24 @@
+name: ml-dev
+channels:
+  - pytorch       
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - ipykernel
+  - notebook
+  - pandas
+  - numpy
+  - boto3
+  - sagemaker
+  - transformers
+  - pip
+  - pytorch       
+  - pip:
+      - sentencepiece
+      - transformers[torch]
+      - tensorboard
+
+# matplotlib
+# nltk
+# torch accelerate

@@ -1,0 +1,7 @@
+.ipynb_checkpoints
+data/*
+notebooks/results/*
+notebooks/obsolete/*
+notebooks/logs/*
+notebooks/.ipynb_checkpoints/*
+models/*
