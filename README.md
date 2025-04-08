@@ -2,6 +2,9 @@
 
 This project demonstrates a scalable, production-style inference pipeline using AWS CDK, Lambda, API Gateway, and SageMaker. It includes a fully automated CI/CD pipeline powered by GitHub Actions and is designed to showcase mid-level skills in AWS Cloud Engineering, DevOps, Machine Learning Engineering, and MLOps.
 
+
+[Visit GitHub Project Board](https://github.com/users/adma224/projects/7)
+
 ---
 
 ## Project Goals
