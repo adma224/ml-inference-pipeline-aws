@@ -44,20 +44,20 @@ This project demonstrates a scalable, production-style inference pipeline using 
 
 ## Project Roadmap
 
-### **Phase 0: CI/CD + Local Environment Setup**
+~~### **Phase 0: CI/CD + Local Environment Setup**~~
 
 **Goal**: Set up development and deployment workflows.
 
-- [x]  Create Conda environments yaml files (`cdk-dev`, `ml-dev`)
-- [x]  Scaffold GitHub Actions CI/CD pipeline for CDK
-- [x]  Set up CDK project in Python deploy S3 bucket and IAM permissions
-- [x]  Store AWS credentials in GitHub Secrets
+- [x]  ~~Create Conda environments yaml files (`cdk-dev`, `ml-dev`)~~
+- [x]  ~~Scaffold GitHub Actions CI/CD pipeline for CDK~~
+- [x]  ~~Set up CDK project in Python deploy S3 bucket and IAM permissions~~
+- [x]  ~~Store AWS credentials in GitHub Secrets~~
 
 **Deliverables**:
 
-- [x]  `.github/workflows/deploy.yml`
-- [x]  `cdk/` directory with base infra
-- [x]  GitHub Actions deploying infra stack automatically
+- [x]  ~~`.github/workflows/deploy.yml`~~
+- [x]  ~~`cdk/` directory with base infra~~
+- [x]  ~~GitHub Actions deploying infra stack automatically~~
 
 **Tech stack**:
 
@@ -65,22 +65,22 @@ This project demonstrates a scalable, production-style inference pipeline using 
 
 ---
 
-### **Phase 1: Local Model Training + Testing**
+~~### **Phase 1: Local Model Training + Testing**~~
 
 **Goal**: Fine-tune GPT-2 model locally and validate outputs.
 
 **Steps**:
 
-- [x]  Train DistilGPT-2 on headlines dataset in Jupyter Notebook
-- [x]  Test model and tune hyperparameters
-- [x]  Run local predictions to validate quality
-- [x]  Save model and tokenizer to disk (`.save_pretrained`)
+- [x]  ~~Train DistilGPT-2 on headlines dataset in Jupyter Notebook~~
+- [x]  ~~Test model and tune hyperparameters~~
+- [x]  ~~Run local predictions to validate quality~~
+- [x]  ~~Save model and tokenizer to disk (`.save_pretrained`)~~
 
 **Deliverables**:
 
-- [x]  Jupyter notebook with training + testing code
-- [x]  `upload_model.py` script to upload artifacts to S3
-- [x]  Exported artifacts in `models/`
+- [x]  ~~Jupyter notebook with training + testing code~~
+- [x]  ~~`upload_model.py` script to upload artifacts to S3~~
+- [x]  ~~Exported artifacts in `models/`~~
 
 **Tech stack**:
 
@@ -88,25 +88,25 @@ This project demonstrates a scalable, production-style inference pipeline using 
 
 ---
 
-### **Phase 2: Inference Deployment in AWS**
+~~### **Phase 2: Inference Deployment in AWS**~~
 
 **Goal**: Deploy the trained model as a **SageMaker Serverless Inference Endpoint**.
 
 **Steps**:
 
-- [x]  Use CDK to create:
+- [x]  ~~Use CDK to create:~~
     - `S3 bucket` for artifacts
     - `IAM role` for SageMaker
     - `CfnModel`, `CfnEndpointConfig`, and `CfnEndpoint`
-- [x]  Upload model.tar.gz to S3
-- [x]  Deploy endpoint via CDK
-- [x]  Invoke endpoint using `invoke_endpoints.py`
+- [x]  ~~Upload model.tar.gz to S3~~
+- [x]  ~~Deploy endpoint via CDK~~
+- [x]  ~~Invoke endpoint using `invoke_endpoints.py`~~
 
 **Deliverables**:
 
-- [x]  `inference_stack.py` with SageMaker setup
-- [x]  Endpoint name stored in SSM
-- [x]  Successfully invoked endpoint with real output
+- [x]  ~~`inference_stack.py` with SageMaker setup~~
+- [x]  ~~Endpoint name stored in SSM~~
+- [x]  ~~Successfully invoked endpoint with real output~~
 
 **Tech stack**:
 
