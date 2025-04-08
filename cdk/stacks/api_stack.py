@@ -24,9 +24,9 @@ class ApiStack(Stack):
             self, "InvokeSageMakerEndpointHandler",
             runtime=_lambda.Runtime.PYTHON_3_10,
             handler="lambda_function.handler",
-            code=_lambda.Code.from_asset("lambda/invoke_endpoint"),
+            code=_lambda.Code.from_asset("../lambda/invoke_endpoint"),
             environment={
-                "ENDPOINT_NAME_PARAM": endpoint_name_param.parameter_name
+                "ENDPOINT_NAME_PARAM": endpoint_param.parameter_name
             },
             timeout=Duration.seconds(30), 
         )

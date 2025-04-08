@@ -38,7 +38,7 @@ def main():
                     api_url,
                     headers={"Content-Type": "application/json"},
                     data=json.dumps(payload),
-                    timeout=10
+                    timeout=30
                 )
                 if response.status_code == 200:
                     result = response.json()
