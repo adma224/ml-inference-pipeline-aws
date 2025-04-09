@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Text Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      text-align: center;
+      max-width: 600px;
+      width: 100%;
+    }
+    input[type="text"] {
+      width: 70%;
+      padding: 10px;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .output {
+      margin-top: 20px;
+      background: #fff;
+      padding: 15px;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>News Headline Generator</h1>
+    <p>Type a prompt and click generate to get a response from the DistilGPT2 model.</p>
+    <div>
+      <input id="prompt" type="text" placeholder="Type your prompt here..." />
+      <button onclick="generateText()">Generate</button>
+    </div>
+    <div id="response" class="output"></div>
+  </div>
+
+  <script>
+    async function generateText() {
+      const input = document.getElementById("prompt").value;
+      const responseBox = document.getElementById("response");
+      responseBox.innerText = "Loading...";
+
+      if (!input.trim()) {
+        responseBox.innerText = "Please enter a prompt.";
+        return;
+      }
+
+      try {
+        const res = await fetch("https://rfuxqk9co7.execute-api.us-east-1.amazonaws.com/prod/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ inputs: input })
+        });
+
+        if (!res.ok) {
+          throw new Error(`HTTP Error: ${res.status}`);
+        }
+
+        const data = await res.json();
+        if (Array.isArray(data) && data[0].generated_text) {
+          responseBox.innerText = data[0].generated_text;
+        } else {
+          responseBox.innerText = "Unexpected response format.";
+          console.log("Debug:", data);
+        }
+      } catch (err) {
+        responseBox.innerText = "Failed to reach API.";
+        console.error("Error: ", err);
+      }
+    }
+
+  </script>
+</body>
+</html>
