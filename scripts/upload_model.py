@@ -23,11 +23,11 @@ DEST_KEY = f"gpt2-v1/{VERSION_TAG}/model.tar.gz"
 with tarfile.open(OUTPUT_PATH, "w:gz") as tar:
     tar.add(MODEL_DIR, arcname=".") 
 
-print(f"✅ Model tarball created: {OUTPUT_PATH}")
+print(f" Model tarball created: {OUTPUT_PATH}")
 
 # Upload model artifacts to S3
 s3.upload_file(OUTPUT_PATH, BUCKET_NAME, DEST_KEY)
-print(f"🚀 Uploaded to s3://{BUCKET_NAME}/{DEST_KEY}")
+print(f" Uploaded to s3://{BUCKET_NAME}/{DEST_KEY}")
 
 # Store latest model version in SSM
 ssm.put_parameter(
@@ -36,7 +36,7 @@ ssm.put_parameter(
     Type="String",
     Overwrite=True
 )
-print(f"📌 Updated SSM with latest model version: {VERSION_TAG}")
+print(f" Updated SSM with latest model version: {VERSION_TAG}")
 
 
 
