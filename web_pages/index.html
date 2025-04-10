@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Text Generator</title>
+  <title>News Headline Generator</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -29,6 +29,7 @@
     button {
       padding: 10px 20px;
       font-size: 16px;
+      margin: 5px;
       cursor: pointer;
     }
     .output {
@@ -37,6 +38,9 @@
       padding: 15px;
       border-radius: 6px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .vote-buttons {
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -49,9 +53,15 @@
       <button onclick="generateText()">Generate</button>
     </div>
     <div id="response" class="output"></div>
+    <div class="vote-buttons">
+      <button onclick="sendVote('up')">👍 Upvote</button>
+      <button onclick="sendVote('down')">👎 Downvote</button>
+    </div>
   </div>
 
   <script>
+    const API_BASE = "https://rfuxqk9co7.execute-api.us-east-1.amazonaws.com/prod";
+
     async function generateText() {
       const input = document.getElementById("prompt").value;
       const responseBox = document.getElementById("response");
@@ -63,17 +73,11 @@
       }
 
       try {
-        const res = await fetch("https://rfuxqk9co7.execute-api.us-east-1.amazonaws.com/prod/generate", {
+        const res = await fetch(`${API_BASE}/generate`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ inputs: input })
         });
-
-        if (!res.ok) {
-          throw new Error(`HTTP Error: ${res.status}`);
-        }
 
         const data = await res.json();
         if (Array.isArray(data) && data[0].generated_text) {
@@ -84,10 +88,37 @@
         }
       } catch (err) {
         responseBox.innerText = "Failed to reach API.";
-        console.error("Error: ", err);
+        console.error("Error:", err);
       }
     }
 
+    async function sendVote(voteType) {
+      try {
+        const res = await fetch(`${API_BASE}/vote`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ vote: voteType })
+        });
+
+        if (!res.ok) {
+          console.error("Vote failed with status:", res.status);
+        } else {
+          console.log("Vote sent:", voteType);
+        }
+      } catch (err) {
+        console.error("Vote error:", err);
+      }
+    }
+
+    // 🔥 Warm-up ping on load
+    window.addEventListener("load", async () => {
+      try {
+        await fetch(`${API_BASE}/ping`);
+        console.log("Ping successful");
+      } catch (err) {
+        console.warn("Ping failed:", err);
+      }
+    });
   </script>
 </body>
 </html>

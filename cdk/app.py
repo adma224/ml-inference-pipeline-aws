@@ -8,7 +8,7 @@ from stacks.ai_stack import AIStack
 from stacks.backend_stack import BackendStack
 from stacks.frontend_stack import FrontendStack
 
-# Set environment from current AWS credentials
+# 🌍 Set target environment from AWS credentials
 env = Environment(
     account=os.getenv("CDK_DEFAULT_ACCOUNT"),
     region=os.getenv("CDK_DEFAULT_REGION", "us-east-1")
@@ -16,23 +16,22 @@ env = Environment(
 
 app = App()
 
-# 1. Create foundational resources: S3 + IAM role
+# 1️⃣ Base resources: S3 bucket + IAM + SSM
 base_stack = BaseStack(app, "BaseStack", env=env)
 
-# 2. Create SageMaker Model + Endpoint, reads values from SSM (created by BaseStack)
+# 2️⃣ ML deployment: SageMaker model + endpoint
 ai_stack = AIStack(app, "AIStack", env=env)
 
-# 3. Deploy Lambda Functions (generate, ping, flag)
+# 3️⃣ Backend API logic: Lambda functions
 backend_stack = BackendStack(app, "BackendStack", env=env)
 
-# 4. Expose API Gateway + static frontend website
+# 4️⃣ Frontend & API Gateway
 frontend_stack = FrontendStack(
     app, "FrontendStack",
     generate_fn=backend_stack.generate_fn,
     ping_fn=backend_stack.ping_fn,
-    flag_fn=backend_stack.flag_fn,
+    vote_fn=backend_stack.vote_fn,  # ✅ Now using vote_fn
     env=env
 )
 
 app.synth()
-
