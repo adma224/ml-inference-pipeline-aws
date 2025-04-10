@@ -1,4 +1,4 @@
-# :poodle: Serverless Model Inference Pipeline with AWS CDK & CI/CD
+# Serverless Model Inference Pipeline with AWS CDK & CI/CD
 
 #### News Headline Generator – GPT-2 Headline Completion Web App
 
