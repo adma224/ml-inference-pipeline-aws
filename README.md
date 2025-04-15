@@ -1,4 +1,4 @@
-# Serverless Generative ML Pipeline with AWS CDK & CI/CD
+# AWS Serverless Generative ML Microservices Infra with CloudFormation & CI/CD
 
 ## Project Description
 
