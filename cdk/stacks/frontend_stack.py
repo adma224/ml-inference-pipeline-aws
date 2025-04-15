@@ -18,7 +18,7 @@ class FrontendStack(Stack):
         frontend_bucket = s3.Bucket(self, "FrontendBucket",
             website_index_document="index.html",
             website_error_document="error.html",
-            public_read_access=False,
+            public_read_access=True,
             block_public_access=s3.BlockPublicAccess(block_public_policy=False),
             auto_delete_objects=True,
             removal_policy=RemovalPolicy.DESTROY

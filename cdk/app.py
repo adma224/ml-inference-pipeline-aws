@@ -8,30 +8,70 @@ from stacks.ai_stack import AIStack
 from stacks.backend_stack import BackendStack
 from stacks.frontend_stack import FrontendStack
 
-# 🌍 Set target environment from AWS credentials
+
+"""
+    app.py
+
+    Entry point for the AWS CDK application. This script defines the deployment
+    sequence of all infrastructure stacks in the ML inference pipeline project.
+
+    Stacks:
+    - BaseStack: foundational IAM, S3, and SSM resources
+    - AIStack: SageMaker model and endpoint resources
+    - BackendStack: Aurora Serverless SQL database, Lambda functions, and SSM integration
+    - FrontendStack: S3-hosted static frontend with API Gateway + Lambda integration
+
+    Stack dependencies:
+    - BackendStack depends on AIStack (for SageMaker endpoint in SSM)
+    - FrontendStack depends on BackendStack (for Lambda references)
+"""
+
+
+"""
+    Environment setup
+    Uses AWS CLI profile values for account and region
+"""
+
 env = Environment(
     account=os.getenv("CDK_DEFAULT_ACCOUNT"),
     region=os.getenv("CDK_DEFAULT_REGION", "us-east-1")
 )
 
+
+"""
+    CDK application definition
+"""
+
 app = App()
 
-# 1️⃣ Base resources: S3 bucket + IAM + SSM
+
+"""
+    Stack deployment order
+"""
+
+# Shared resources (IAM, S3, SSM parameters)
 base_stack = BaseStack(app, "BaseStack", env=env)
 
-# 2️⃣ ML deployment: SageMaker model + endpoint
+# SageMaker model + endpoint
 ai_stack = AIStack(app, "AIStack", env=env)
 
-# 3️⃣ Backend API logic: Lambda functions
+# Lambda functions, Aurora DB, DBInit Lambda
 backend_stack = BackendStack(app, "BackendStack", env=env)
+backend_stack.add_dependency(ai_stack)
 
-# 4️⃣ Frontend & API Gateway
+# Static frontend + API Gateway integration
 frontend_stack = FrontendStack(
     app, "FrontendStack",
     generate_fn=backend_stack.generate_fn,
     ping_fn=backend_stack.ping_fn,
-    vote_fn=backend_stack.vote_fn,  # ✅ Now using vote_fn
+    vote_fn=backend_stack.vote_fn,
     env=env
 )
+frontend_stack.add_dependency(backend_stack)
+
+
+"""
+    Synthesize CloudFormation templates
+"""
 
 app.synth()

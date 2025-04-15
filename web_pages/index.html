@@ -41,6 +41,11 @@
     }
     .vote-buttons {
       margin-top: 10px;
+      display: none; /* initially hidden */
+    }
+    #feedback {
+      margin-top: 10px;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -53,19 +58,27 @@
       <button onclick="generateText()">Generate</button>
     </div>
     <div id="response" class="output"></div>
+
     <div class="vote-buttons">
       <button onclick="sendVote('up')">👍 Upvote</button>
       <button onclick="sendVote('down')">👎 Downvote</button>
     </div>
+
+    <div id="feedback"></div>
   </div>
 
   <script>
-    const API_BASE = "https://rfuxqk9co7.execute-api.us-east-1.amazonaws.com/prod";
+    const API_BASE = "https://du8xu6q9fg.execute-api.us-east-1.amazonaws.com/prod";
 
     async function generateText() {
       const input = document.getElementById("prompt").value;
       const responseBox = document.getElementById("response");
+      const voteButtons = document.querySelector(".vote-buttons");
+      const feedback = document.getElementById("feedback");
+
       responseBox.innerText = "Loading...";
+      voteButtons.style.display = "none";
+      feedback.innerText = "";
 
       if (!input.trim()) {
         responseBox.innerText = "Please enter a prompt.";
@@ -82,6 +95,7 @@
         const data = await res.json();
         if (Array.isArray(data) && data[0].generated_text) {
           responseBox.innerText = data[0].generated_text;
+          voteButtons.style.display = "block"; // Show voting buttons
         } else {
           responseBox.innerText = "Unexpected response format.";
           console.log("Debug:", data);
@@ -93,24 +107,24 @@
     }
 
     async function sendVote(voteType) {
+      const voteButtons = document.querySelector(".vote-buttons");
+      const feedback = document.getElementById("feedback");
+
       try {
-        const res = await fetch(`${API_BASE}/vote`, {
+        await fetch(`${API_BASE}/vote`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ vote: voteType })
         });
 
-        if (!res.ok) {
-          console.error("Vote failed with status:", res.status);
-        } else {
-          console.log("Vote sent:", voteType);
-        }
+        voteButtons.style.display = "none";         // Hide buttons
+        feedback.innerText = "Thank you for your feedback!"; // Show thanks
       } catch (err) {
         console.error("Vote error:", err);
+        feedback.innerText = "There was a problem submitting your vote.";
       }
     }
 
-    // 🔥 Warm-up ping on load
     window.addEventListener("load", async () => {
       try {
         await fetch(`${API_BASE}/ping`);
