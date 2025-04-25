@@ -8,6 +8,17 @@ from aws_cdk import (
     CfnOutput,
     RemovalPolicy
 )
+
+
+from aws_cdk import aws_route53 as route53
+from aws_cdk import aws_certificatemanager as acm
+from aws_cdk import aws_cloudfront as cloudfront
+from aws_cdk import aws_s3_origins as origins
+from aws_cdk import aws_route53_targets as targets
+
+
+
+
 from constructs import Construct
 
 class FrontendStack(Stack):
@@ -37,11 +48,49 @@ class FrontendStack(Stack):
             destination_bucket=frontend_bucket
         )
 
+        # Assume frontend_bucket is already created (you have it)
+
+        # Hosted Zone
+        hosted_zone = route53.HostedZone.from_lookup(
+            self, "HostedZone",
+            domain_name="adrianmurillo.io"
+        )
+
+        # Certificate
+        certificate = acm.Certificate(
+            self, "SiteCertificate",
+            domain_name="adrianmurillo.io",
+            validation=acm.CertificateValidation.from_dns(hosted_zone)
+        )
+
+        # CloudFront Distribution
+        distribution = cloudfront.Distribution(
+            self, "FrontendDistribution",
+            default_root_object="index.html",
+            domain_names=["adrianmurillo.io"],
+            certificate=certificate,
+            default_behavior=cloudfront.BehaviorOptions(
+                origin=origins.S3Origin(frontend_bucket),
+                viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS
+            )
+        )
+
+        # Route53 Alias Record
+        route53.ARecord(
+            self, "AliasRecord",
+            zone=hosted_zone,
+            target=route53.RecordTarget.from_alias(targets.CloudFrontTarget(distribution)),
+            record_name="adrianmurillo.io"
+        )
+
+
+
         # Define the API Gateway
         api = apigateway.RestApi(self, "MLFrontendApi",
             rest_api_name="MLFrontendApi",
             deploy_options=apigateway.StageOptions(stage_name="prod")
         )
+
 
         def add_cors_options(resource):
             resource.add_method(

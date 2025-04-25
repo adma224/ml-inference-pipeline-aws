@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>News Headline Generator</title>
+  <title>Headline Generator</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -19,6 +19,7 @@
       text-align: center;
       max-width: 600px;
       width: 100%;
+      padding: 20px;
     }
     input[type="text"] {
       width: 70%;
@@ -29,110 +30,95 @@
     button {
       padding: 10px 20px;
       font-size: 16px;
-      margin: 5px;
-      cursor: pointer;
     }
-    .output {
-      margin-top: 20px;
-      background: #fff;
+    .instructions {
+      background-color: #ffffff;
+      border: 1px solid #ccc;
       padding: 15px;
-      border-radius: 6px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      border-radius: 8px;
+      text-align: left;
     }
-    .vote-buttons {
-      margin-top: 10px;
-      display: none; /* initially hidden */
+    .instructions h2 {
+      font-size: 18px;
+      margin-bottom: 10px;
     }
-    #feedback {
-      margin-top: 10px;
-      font-weight: bold;
+    .instructions ul {
+      margin-top: 0;
+      padding-left: 20px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>News Headline Generator</h1>
-    <p>Type a prompt and click generate to get a response from the DistilGPT2 model.</p>
-    <div>
-      <input id="prompt" type="text" placeholder="Type your prompt here..." />
-      <button onclick="generateText()">Generate</button>
+    <div class="instructions">
+      <h2>How to Use</h2>
+      <ul>
+        <li>Type the beginning of a news headline</li>
+        <li>Click Generate</li>
+        <li>Receive a completed headline based on your input</li>
+      </ul>
+      <h2>Example Prompts</h2>
+      <ul>
+        <li>Scientists around the world say</li>
+        <li>The US president</li>
+        <li>Climate change</li>
+      </ul>
     </div>
-    <div id="response" class="output"></div>
 
-    <div class="vote-buttons">
-      <button onclick="sendVote('up')">👍 Upvote</button>
-      <button onclick="sendVote('down')">👎 Downvote</button>
-    </div>
+    <input type="text" id="promptInput" placeholder="Start your headline here..." />
+    <button onclick="generateText()">Generate</button>
 
-    <div id="feedback"></div>
+    <div id="outputContainer" style="margin-top: 20px;"></div>
+    <div id="feedbackContainer" style="margin-top: 10px;"></div>
   </div>
 
   <script>
-    const API_BASE = "https://du8xu6q9fg.execute-api.us-east-1.amazonaws.com/prod";
-
     async function generateText() {
-      const input = document.getElementById("prompt").value;
-      const responseBox = document.getElementById("response");
-      const voteButtons = document.querySelector(".vote-buttons");
-      const feedback = document.getElementById("feedback");
+      const prompt = document.getElementById("promptInput").value;
+      const outputContainer = document.getElementById("outputContainer");
+      const feedbackContainer = document.getElementById("feedbackContainer");
 
-      responseBox.innerText = "Loading...";
-      voteButtons.style.display = "none";
-      feedback.innerText = "";
-
-      if (!input.trim()) {
-        responseBox.innerText = "Please enter a prompt.";
-        return;
-      }
+      outputContainer.innerText = "Loading...";
+      feedbackContainer.innerHTML = "";
 
       try {
-        const res = await fetch(`${API_BASE}/generate`, {
+        const response = await fetch("/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ inputs: input })
+          body: JSON.stringify({ prompt: prompt })
         });
 
-        const data = await res.json();
-        if (Array.isArray(data) && data[0].generated_text) {
-          responseBox.innerText = data[0].generated_text;
-          voteButtons.style.display = "block"; // Show voting buttons
-        } else {
-          responseBox.innerText = "Unexpected response format.";
-          console.log("Debug:", data);
-        }
-      } catch (err) {
-        responseBox.innerText = "Failed to reach API.";
-        console.error("Error:", err);
+        const result = await response.json();
+        outputContainer.innerText = result.generated_text;
+
+        const voteButtons = `
+          <button onclick="vote('up')">👍</button>
+          <button onclick="vote('down')">👎</button>
+        `;
+        feedbackContainer.innerHTML = voteButtons;
+      } catch (error) {
+        outputContainer.innerText = "An error occurred.";
       }
     }
 
-    async function sendVote(voteType) {
-      const voteButtons = document.querySelector(".vote-buttons");
-      const feedback = document.getElementById("feedback");
-
-      try {
-        await fetch(`${API_BASE}/vote`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ vote: voteType })
-        });
-
-        voteButtons.style.display = "none";         // Hide buttons
-        feedback.innerText = "Thank you for your feedback!"; // Show thanks
-      } catch (err) {
-        console.error("Vote error:", err);
-        feedback.innerText = "There was a problem submitting your vote.";
-      }
+    async function vote(direction) {
+      const feedbackContainer = document.getElementById("feedbackContainer");
+      feedbackContainer.innerHTML = "Thank you for your feedback!";
+      await fetch("/vote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vote: direction })
+      });
     }
 
-    window.addEventListener("load", async () => {
+    window.onload = async () => {
       try {
-        await fetch(`${API_BASE}/ping`);
-        console.log("Ping successful");
-      } catch (err) {
-        console.warn("Ping failed:", err);
+        await fetch("/ping");
+      } catch (e) {
+        console.error("Ping failed", e);
       }
-    });
+    };
   </script>
 </body>
 </html>
