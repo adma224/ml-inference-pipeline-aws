@@ -13,7 +13,7 @@ from aws_cdk import (
 from aws_cdk import aws_route53 as route53
 from aws_cdk import aws_certificatemanager as acm
 from aws_cdk import aws_cloudfront as cloudfront
-from aws_cdk import aws_s3_origins as origins
+from aws_cdk.aws_s3_origins import S3Origin
 from aws_cdk import aws_route53_targets as targets
 
 
@@ -70,7 +70,7 @@ class FrontendStack(Stack):
             domain_names=["adrianmurillo.io"],
             certificate=certificate,
             default_behavior=cloudfront.BehaviorOptions(
-                origin=origins.S3Origin(frontend_bucket),
+                origin=S3Origin(frontend_bucket),
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS
             )
         )
