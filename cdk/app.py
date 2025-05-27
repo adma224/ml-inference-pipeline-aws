@@ -7,6 +7,7 @@ from stacks.base_stack import BaseStack
 from stacks.ai_stack import AIStack
 from stacks.backend_stack import BackendStack
 from stacks.frontend_stack import FrontendStack
+from stacks.network_stack import NetworkStack
 
 
 """
@@ -73,5 +74,15 @@ frontend_stack.add_dependency(backend_stack)
 """
     Synthesize CloudFormation templates
 """
+
+# Network stack (CloudFront, ACM, Route 53)
+network_stack = NetworkStack(
+    app, "NetworkStack",
+    frontend_bucket=frontend_stack.frontend_bucket,
+    domain_name="adrianmurillo.io",
+    env=env
+)
+network_stack.add_dependency(frontend_stack)  # ✅ explicit dependency
+
 
 app.synth()
