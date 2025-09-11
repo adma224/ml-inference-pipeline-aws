@@ -2,92 +2,131 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Text Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Headline Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f8f9fa;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
+    :root {
+      --bg: #f8f9fa; --panel: #ffffff; --border: #d0d7de; --text: #1f2328;
+      --muted: #6a737d; --accent: #0d6efd; --disabled: #9aa4ad;
     }
-    .container {
-      text-align: center;
-      max-width: 600px;
-      width: 100%;
-    }
-    input[type="text"] {
-      width: 70%;
-      padding: 10px;
-      font-size: 16px;
-      margin-right: 10px;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    .output {
-      margin-top: 20px;
-      background: #fff;
-      padding: 15px;
-      border-radius: 6px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
+    *{box-sizing:border-box}
+    body{font-family:'Newsreader',Georgia,'Times New Roman',Times,serif;background:var(--bg);color:var(--text);margin:0;min-height:100vh;display:grid;place-items:center}
+    .container{width:100%;max-width:760px;padding:24px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:0 2px 10px rgba(16,24,40,.04)}
+    h1{margin:0 0 12px;font-size:28px;letter-spacing:.2px;font-family:'Playfair Display','Newsreader',Georgia,'Times New Roman',Times,serif}
+    p.lede{margin:0 0 16px;color:var(--muted);line-height:1.5}
+    .controls{display:flex;gap:10px;margin:16px 0 0;align-items:center;flex-wrap:wrap}
+    label{font-weight:600}
+    input[type=text]{flex:1 1 420px;min-width:260px;padding:12px 14px;font-size:16px;border:1px solid var(--border);border-radius:10px;outline:none}
+    input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(13,110,253,.15)}
+    button.primary{padding:12px 18px;font-size:16px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer}
+    button.primary:disabled{background:var(--disabled);border-color:var(--disabled);cursor:not-allowed}
+    .output{margin-top:16px;padding:16px;background:#fbfcfd;border:1px dashed var(--border);border-radius:10px;min-height:56px;display:flex;align-items:center}
+    .feedback{margin-top:10px;display:flex;align-items:center;gap:8px}
+    .vote{border:1px solid var(--border);background:#fff;padding:8px 12px;border-radius:10px;font-size:18px;cursor:not-allowed;color:var(--disabled)}
+    details.info{margin-top:16px;border:1px solid var(--border);border-radius:10px;background:#fff;padding:12px 14px}
+    details.info summary{cursor:pointer;font-weight:600}
+    details.info .content{margin-top:8px;color:#2b3036;line-height:1.55}
+    .small{font-size:13px;color:var(--muted)}
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>News Headline Generator</h1>
-    <p>Type a prompt and click generate to get a response from the DistilGPT2 model.</p>
-    <div>
-      <input id="prompt" type="text" placeholder="Type your prompt here..." />
-      <button onclick="generateText()">Generate</button>
-    </div>
-    <div id="response" class="output"></div>
-  </div>
+  <main class="container">
+    <section class="card" aria-labelledby="title">
+      <h1 id="title">Headline Generator</h1>
+      <p class="lede">
+        This page simulates a newspaper desk: you type the first few words of a headline and the model completes it as if it were
+        composing the rest of the line in a newsroom. It's a controlled, text-only demo meant to showcase completion quality and prompt style—not a news source.
+      </p>
+
+      <label for="promptInput" class="small">Start your headline</label>
+      <div class="controls">
+        <input type="text" id="promptInput" placeholder="Start your headline here… e.g., ‘Scientists warn’"/>
+        <button class="primary" id="generateBtn" onclick="generateText()">Generate</button>
+      </div>
+
+      <div id="outputContainer" class="output" aria-live="polite">—</div>
+
+      <div class="feedback" id="feedbackContainer" aria-describedby="fb-help">
+        <button class="vote" id="thumbUp" title="Upvote (available in Phase 6)" aria-disabled="true" disabled>👍</button>
+        <button class="vote" id="thumbDown" title="Downvote (available in Phase 6)" aria-disabled="true" disabled>👎</button>
+        <span id="fb-help" class="small">Feedback is stubbed for now. We’ll wire it in Phase 6 (A/B + metrics).</span>
+      </div>
+
+      <details class="info">
+        <summary>More about what happens under the hood</summary>
+        <div class="content">
+          <ul>
+            <li><strong>Invocation path:</strong> Browser → API Gateway → Lambda → SageMaker <em>Serverless Inference</em>.</li>
+            <li><strong>Warm-up:</strong> Cold starts can add latency; the page pings the API on load.</li>
+            <li><strong>Prompt style examples:</strong> <code>Scientists around the world say …</code>, <code>The US president announces …</code>, <code>Climate change drives …</code>, <code>Local officials report …</code>.</li>
+            <li><strong>Model:</strong> DistilGPT-2/GPT-2 fine-tuned on headline-like text; artifacts in S3; names in SSM.</li>
+          </ul>
+        </div>
+      </details>
+
+      <p class="small">Tip: short, declarative openings usually produce tighter headlines.</p>
+    </section>
+  </main>
 
   <script>
-    async function generateText() {
-      const input = document.getElementById("prompt").value;
-      const responseBox = document.getElementById("response");
-      responseBox.innerText = "Loading...";
+    // Point to API Gateway (not the S3 website). Use CDK/SSM to inject this in prod.
+    const API_BASE = "https://du8xu6q9fg.execute-api.us-east-1.amazonaws.com/prod";
 
-      if (!input.trim()) {
-        responseBox.innerText = "Please enter a prompt.";
+
+    async function generateText() {
+      const input = document.getElementById("promptInput");
+      const output = document.getElementById("outputContainer");
+      const btn = document.getElementById("generateBtn");
+
+      const prompt = (input.value || "").trim();
+      if (!prompt) {
+        input.focus();
+        output.textContent = "Please enter a headline starter.";
         return;
       }
 
+      output.textContent = "Loading…";
+      btn.disabled = true;
+
       try {
-        const res = await fetch("https://rfuxqk9co7.execute-api.us-east-1.amazonaws.com/prod/generate", {
+        const res = await fetch(`${API_BASE}/generate`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ inputs: input })
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ inputs: prompt }),   // match Lambda contract
+          mode: "cors",
+          credentials: "omit"
         });
 
-        if (!res.ok) {
-          throw new Error(`HTTP Error: ${res.status}`);
-        }
-
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        if (Array.isArray(data) && data[0].generated_text) {
-          responseBox.innerText = data[0].generated_text;
+
+        // Lambda returns Hugging Face-style output (array) or a dict passthrough
+        if (Array.isArray(data) && data[0]?.generated_text) {
+          output.textContent = data[0].generated_text;
+        } else if (data.generated_text) {
+          output.textContent = data.generated_text;
+        } else if (data.error) {
+          output.textContent = `Error: ${data.error}`;
         } else {
-          responseBox.innerText = "Unexpected response format.";
-          console.log("Debug:", data);
+          output.textContent = "Unexpected response format.";
+          console.debug("Response payload:", data);
         }
       } catch (err) {
-        responseBox.innerText = "Failed to reach API.";
-        console.error("Error: ", err);
+        console.error(err);
+        output.textContent = "An error occurred while generating the headline.";
+      } finally {
+        btn.disabled = false;
       }
     }
 
+    // Reduce first-hit latency for serverless by pinging on load.
+    window.addEventListener("load", async () => {
+      try { await fetch(`${API_BASE}/ping`, { mode: "cors" }); } catch (_) {}
+    });
   </script>
 </body>
 </html>

@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import os
 from aws_cdk import App, Environment
 
@@ -7,32 +5,38 @@ from stacks.base_stack import BaseStack
 from stacks.ai_stack import AIStack
 from stacks.backend_stack import BackendStack
 from stacks.frontend_stack import FrontendStack
+from stacks.network_stack import NetworkStack
 
-# Set environment from current AWS credentials
 env = Environment(
     account=os.getenv("CDK_DEFAULT_ACCOUNT"),
-    region=os.getenv("CDK_DEFAULT_REGION", "us-east-1")
+    region=os.getenv("CDK_DEFAULT_REGION", "us-east-1"),
 )
 
 app = App()
 
-# 1. Create foundational resources: S3 + IAM role
 base_stack = BaseStack(app, "BaseStack", env=env)
 
-# 2. Create SageMaker Model + Endpoint, reads values from SSM (created by BaseStack)
 ai_stack = AIStack(app, "AIStack", env=env)
 
-# 3. Deploy Lambda Functions (generate, ping, flag)
 backend_stack = BackendStack(app, "BackendStack", env=env)
+backend_stack.add_dependency(ai_stack)
 
-# 4. Expose API Gateway + static frontend website
 frontend_stack = FrontendStack(
     app, "FrontendStack",
     generate_fn=backend_stack.generate_fn,
     ping_fn=backend_stack.ping_fn,
-    flag_fn=backend_stack.flag_fn,
-    env=env
+    vote_fn=backend_stack.vote_fn,
+    env=env,
 )
+frontend_stack.add_dependency(backend_stack)
+
+network_stack = NetworkStack(
+    app, "NetworkStack",
+    frontend_bucket=frontend_stack.frontend_bucket,
+    rest_api=frontend_stack.api,
+    domain_name="adrianmurillo.io",
+    env=env,
+)
+network_stack.add_dependency(frontend_stack)
 
 app.synth()
-
