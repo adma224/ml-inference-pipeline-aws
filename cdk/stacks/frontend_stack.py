@@ -86,36 +86,20 @@ class FrontendStack(Stack):
 
 
         # Define the API Gateway
-        api = apigateway.RestApi(self, "MLFrontendApi",
+        api = apigateway.RestApi(
+            self, "MLFrontendApi",
             rest_api_name="MLFrontendApi",
-            deploy_options=apigateway.StageOptions(stage_name="prod")
+            deploy_options=apigateway.StageOptions(
+                stage_name="prod",
+                throttling_rate_limit=100.0,
+                throttling_burst_limit=200,             
+            ),
+            default_cors_preflight_options=apigateway.CorsOptions(
+                allow_origins=apigateway.Cors.ALL_ORIGINS,
+                allow_methods=["GET", "POST", "OPTIONS"],
+                allow_headers=["Content-Type"],
+            ),
         )
-
-
-        def add_cors_options(resource):
-            resource.add_method(
-                "OPTIONS",
-                apigateway.MockIntegration(
-                    integration_responses=[{
-                        "statusCode": "200",
-                        "responseParameters": {
-                            "method.response.header.Access-Control-Allow-Headers": "'Content-Type'",
-                            "method.response.header.Access-Control-Allow-Origin": "'*'",
-                            "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST,GET'",
-                        }
-                    }],
-                    passthrough_behavior=apigateway.PassthroughBehavior.NEVER,
-                    request_templates={"application/json": '{"statusCode": 200}'}
-                ),
-                method_responses=[{
-                    "statusCode": "200",
-                    "responseParameters": {
-                        "method.response.header.Access-Control-Allow-Headers": True,
-                        "method.response.header.Access-Control-Allow-Origin": True,
-                        "method.response.header.Access-Control-Allow-Methods": True,
-                    }
-                }]
-            )
 
         def add_lambda_method(resource, method, fn):
             resource.add_method(method,
@@ -137,30 +121,15 @@ class FrontendStack(Stack):
                 }]
             )
 
-        # API resources and their integrations
+        # Then just attach Lambdas with proxy integration:
         generate = api.root.add_resource("generate")
-        add_cors_options(generate)
-        add_lambda_method(generate, "POST", generate_fn)
+        generate.add_method("POST", apigateway.LambdaIntegration(generate_fn, proxy=True))
 
         ping = api.root.add_resource("ping")
-        add_cors_options(ping)
-        add_lambda_method(ping, "GET", ping_fn)
+        ping.add_method("GET", apigateway.LambdaIntegration(ping_fn, proxy=True))
 
         vote = api.root.add_resource("vote")
-        add_cors_options(vote)
-        add_lambda_method(vote, "POST", vote_fn)
-
-        # Security: Add Usage Plan for rate limiting
-        usage_plan = apigateway.UsagePlan(self, "UsagePlan",
-            name="RateLimitedUsagePlan",
-            throttle={
-                "burst_limit": 200,
-                "rate_limit": 100
-            }
-        )
-        # Attach the deployment stage to the usage plan so throttling applies
-        usage_plan.add_api_stage(stage=api.deployment_stage)
-
+        vote.add_method("POST", apigateway.LambdaIntegration(vote_fn, proxy=True))
 
         # Save the API URL to SSM for other stacks or services to reference
         ssm.StringParameter(self, "ApiUrlParam",
