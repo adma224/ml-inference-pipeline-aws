@@ -10,13 +10,13 @@ from aws_cdk import (
 )
 from constructs import Construct
 
-DOMAIN = "adrianmurillo.io"  # hardcode for MVP readability
+DOMAIN = "adrianmurillo.io"  # MVP: hardcoded
 
 class EdgeStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, *, website_bucket: s3.IBucket, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # Route 53 hosted zone must already exist
+        # Hosted zone must already exist
         zone = route53.HostedZone.from_lookup(self, "Zone", domain_name=DOMAIN)
 
         # CloudFront cert (ACM in us-east-1)
@@ -38,26 +38,26 @@ class EdgeStack(Stack):
             )
         )
 
-        # CloudFront -> S3 REST origin
+        # CloudFront -> S3 (REST origin)
         dist = cloudfront.Distribution(
             self, "Dist",
             certificate=cert,
             domain_names=[DOMAIN, f"www.{DOMAIN}"],
             default_root_object="index.html",
             default_behavior=cloudfront.BehaviorOptions(
-                origin=origins.S3Origin(website_bucket),
+                origin=origins.S3BucketOrigin(website_bucket),
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
             ),
         )
 
-        # Publish distribution id for CI (SSM)
+        # Publish distribution ID for CI
         ssm.StringParameter(
             self, "EdgeDistributionId",
             parameter_name="/ml-pipeline/edge/distribution-id",
-            string_value=dist.distribution_id,  # <-- fixed
+            string_value=dist.distribution_id,
         )
 
-        # Attach OAC to the origin (L1 override)
+        # Attach OAC to origin (L1 override)
         dist_l1: cloudfront.CfnDistribution = dist.node.default_child  # type: ignore
         dist_l1.add_property_override(
             "DistributionConfig.Origins.0.OriginAccessControlId", oac.attr_id
@@ -72,13 +72,28 @@ class EdgeStack(Stack):
             conditions={"StringEquals": {"AWS:SourceArn": dist.distribution_arn}},
         ))
 
-        # DNS: apex + www -> CloudFront (A records; AAAA optional)
-        route53.ARecord(self, "AliasApex",
+        # DNS: apex + www -> CloudFront (A and AAAA)
+        route53.ARecord(
+            self, "AliasApex",
             zone=zone,
             record_name=DOMAIN,
             target=route53.RecordTarget.from_alias(targets.CloudFrontTarget(dist)),
         )
-        route53.ARecord(self, "AliasWWW",
+        route53.AaaaRecord(
+            self, "AliasApexAAAA",
+            zone=zone,
+            record_name=DOMAIN,
+            target=route53.RecordTarget.from_alias(targets.CloudFrontTarget(dist)),
+        )
+
+        route53.ARecord(
+            self, "AliasWWW",
+            zone=zone,
+            record_name=f"www.{DOMAIN}",
+            target=route53.RecordTarget.from_alias(targets.CloudFrontTarget(dist)),
+        )
+        route53.AaaaRecord(
+            self, "AliasWWWAAAA",
             zone=zone,
             record_name=f"www.{DOMAIN}",
             target=route53.RecordTarget.from_alias(targets.CloudFrontTarget(dist)),
