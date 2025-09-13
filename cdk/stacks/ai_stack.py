@@ -1,4 +1,3 @@
-# stacks/ai_stack.py
 from aws_cdk import (
     Stack,
     Duration,
@@ -8,6 +7,8 @@ from aws_cdk import (
     aws_cloudwatch_actions as cw_actions,
     aws_sns as sns,
     aws_sns_subscriptions as subs,
+    aws_applicationautoscaling as appscaling,
+    aws_logs as logs,
     CfnOutput,
 )
 from constructs import Construct
@@ -15,25 +16,17 @@ from constructs import Construct
 
 class AIStack(Stack):
     """
-    Hosts the active real-time SageMaker endpoint used by the app.
-
-    Responsibilities
-    - Read shared settings from SSM (artifact bucket, execution role, model version).
-    - Create CfnModel -> points to model.tar.gz in S3 and uses your execution role.
-    - Create CfnEndpointConfig -> real-time instance + data capture to S3.
-    - Create CfnEndpoint -> stable name "gpt2-endpoint".
-    - Publish endpoint name to SSM for Lambda to consume.
-    - Wire a minimal 5XX CloudWatch Alarm to SNS (email).
-
-    Notes
-    - If data capture files do not appear in S3, add an S3 bucket policy that allows
-      PutObject from the SageMaker service principal to the capture prefix.
+    Real-time SageMaker endpoint with:
+      - Data capture to S3
+      - 5XX alarm to SNS
+      - Autoscaling (variant-level) with min/max capacity
+      - SageMaker log group retention (30d)
     """
 
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
 
-        # ----- Inputs pulled from SSM (created by BaseStack) -----
+        # Inputs from SSM
         bucket_param = ssm.StringParameter.from_string_parameter_name(
             self, "ModelArtifactBucket",
             string_parameter_name="/ml-pipeline/s3/model-artifact-bucket",
@@ -47,13 +40,12 @@ class AIStack(Stack):
             string_parameter_name="/ml-pipeline/model/latest-version",
         )
 
-        # Model artifact location: s3://<bucket>/gpt2-v1/<version>/model.tar.gz
         model_data_url = (
             f"s3://{bucket_param.string_value}/gpt2-v1/"
             f"{version_param.string_value}/model.tar.gz"
         )
 
-        # ----- CfnModel (container image + model data + execution role) -----
+        # Model
         model = sagemaker.CfnModel(
             self, "Gpt2Model",
             model_name="gpt2-model",
@@ -67,9 +59,7 @@ class AIStack(Stack):
             },
         )
 
-        # ----- CfnEndpointConfig (real-time instance + data capture) -----
-        # Real-time: single small CPU instance to keep costs down for demos.
-        # Data capture: 100% of requests/responses to s3://<bucket>/gpt2-v1/data-capture/
+        # EndpointConfig (single variant "AllTraffic" + data capture)
         endpoint_config = sagemaker.CfnEndpointConfig(
             self, "Gpt2EndpointConfig",
             endpoint_config_name="gpt2-endpoint-config",
@@ -94,14 +84,22 @@ class AIStack(Stack):
             ),
         )
 
-        # ----- CfnEndpoint (stable endpoint name) -----
+        # Pre-create SageMaker endpoint log group with retention
+        logs.LogGroup(
+            self, "SageMakerEndpointLogs",
+            log_group_name="/aws/sagemaker/Endpoints/gpt2-endpoint",
+            retention=logs.RetentionDays.THIRTY_DAYS,
+            removal_policy=None,
+        )
+
+        # Endpoint
         endpoint = sagemaker.CfnEndpoint(
             self, "Gpt2Endpoint",
             endpoint_name="gpt2-endpoint",
             endpoint_config_name=endpoint_config.attr_endpoint_config_name,
         )
 
-        # Publish endpoint name to SSM for Lambda (BackendStack) to read at runtime
+        # Publish endpoint name to SSM
         ssm.StringParameter(
             self, "SageMakerEndpointParam",
             parameter_name="/ml-pipeline/sagemaker/endpoint-name",
@@ -110,7 +108,7 @@ class AIStack(Stack):
 
         CfnOutput(self, "SageMakerEndpointName", value=endpoint.endpoint_name)
 
-        # ----- Minimal monitoring: 5XX errors -> SNS email -----
+        # Minimal alarm: Invocation 5XX -> SNS email
         topic = sns.Topic(self, "SageMakerAlarms")
         topic.add_subscription(subs.EmailSubscription("adrianmurilloaraya@gmail.com"))
 
@@ -130,3 +128,20 @@ class AIStack(Stack):
             comparison_operator=cw.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
         ).add_alarm_action(cw_actions.SnsAction(topic))
 
+        # Autoscaling for the AllTraffic variant (min=1, max=2)
+        resource_id = "endpoint/gpt2-endpoint/variant/AllTraffic"
+        scalable_target = appscaling.ScalableTarget(
+            self, "SageMakerVariantScalableTarget",
+            service_namespace=appscaling.ServiceNamespace.SAGEMAKER,
+            resource_id=resource_id,
+            scalable_dimension="sagemaker:variant:DesiredInstanceCount",
+            min_capacity=1,
+            max_capacity=2,
+        )
+        scalable_target.scale_to_track_metric(
+            "InvocationsPerInstancePolicy",
+            predefined_metric=appscaling.PredefinedMetric.SAGEMAKER_VARIANT_INVOCATIONS_PER_INSTANCE,
+            target_value=70.0,
+            scale_in_cooldown=Duration.minutes(10),
+            scale_out_cooldown=Duration.minutes(5),
+        )
